@@ -4,6 +4,7 @@
 #include "Singleton.h"
 #include <string>
 #include <set>
+#include <sstream>
 
 class ReadConf : public Singleton<ReadConf>
 {
@@ -34,13 +35,69 @@ class ReadConf : public Singleton<ReadConf>
         ~ReadConf(){};
 
     private:
+        #define ITEMSIZE    5
 
+        #define INTERFACE "caputre_interface"
         std::set<std::string> setInterface;
+
+        #define PROMISCUOUS "promiscuous_mode"
         bool IsPromiscuous;
+
+        #define FILTER "capture_filter"
         std::string strFilter;
+
+        #define REJECTIPS "reject_ips"
         std::set<std::string> setRejectIp;
+
+        #define REJECTPORTS "reject_ports"
         std::set<uint16_t> setRejectPort;
 };
 
+class StringParser
+{
+    public:
+        template <typename Container>
+        static void parseAndInsert(const std::string& row, char unit, Container& container)
+        {
+            typedef typename Container::value_type T;
+            std::stringstream ss(row);
+            std::string token;
+
+            while (std::getline(ss, token, unit))
+            {
+                if (!token.empty())
+                {
+                    addToken<T>(token, container);
+                }
+            }
+        }
+
+    private:
+        template <typename T, typename Container>
+        static void addToken(const std::string& token, Container& container)
+        {
+            addTokenImpl<T>(token, container, std::is_same<T, std::string>());
+        }
+
+        template <typename T, typename Container>
+        static void addTokenImpl(const std::string& token, Container& container, std::true_type)
+        {
+            insertToContainer(container, token);
+        }
+
+        template <typename T, typename Container>
+        static void addTokenImpl(const std::string& token, Container& container, std::false_type)
+        {
+            std::stringstream conv(token);
+            T value;
+            if (conv >> value)
+            {
+                insertToContainer(container, value);
+            }
+        }
+        
+        template <typename T>
+        static void insertToContainer(std::set<T>& c, const T& v) { c.insert(v); }
+};
 
 #endif
