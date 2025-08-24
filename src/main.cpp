@@ -2,6 +2,16 @@
 #include <unistd.h>
 
 #include "ReadConf.h"
+#include "CapturePkt.h"
+
+class CaptureLoggerTest : public PacketListener
+{
+    public:
+        void onPacket(const struct pcap_pkthdr* header, const u_char* packet) override
+        {
+            std::cout << "Captured packet of length: " << header->len << " bytes" << std::endl;
+        }
+};
 
 int main(int argc, char **argv)
 {
@@ -33,6 +43,26 @@ int main(int argc, char **argv)
 
     ReadConf::getInstance().loadConfig(configFile);
     ReadConf::getInstance().printAllConfig();
+
+#if 0
+    try
+    {
+        std::string device = "eth0";
+
+        CapturePkt capturer(device);
+
+        CaptureLoggerTest logger;
+        capturer.addObserver(&logger);
+
+        std::cout << "Starting packet capture on device: " << device << std::endl;
+        capturer.startCapture();
+    }
+    catch (const std::exception& ex)
+    {
+        std::cerr << "Exception: " << ex.what() << std::endl;
+        return 1;
+    }
+#endif
 
     return 0;
 }
