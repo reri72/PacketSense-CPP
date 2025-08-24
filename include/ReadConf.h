@@ -15,16 +15,16 @@ class ReadConf : public Singleton<ReadConf>
         void loadConfig(const std::string& filename);
         void printAllConfig();
         
-        const std::set<std::string> getCaptureInterfaces() { return setInterface; }
+        const std::set<std::string> &getCaptureInterfaces() { return setInterface; }
         void setCaptureInterfaces(std::set<std::string>& interfaces) { setInterface = interfaces; }
 
-        const bool getPromiscuousMode() { return IsPromiscuous; }
+        const bool &getPromiscuousMode() { return IsPromiscuous; }
         void setPromiscuousMode(const bool& mode) { IsPromiscuous = mode; }
 
-        const std::string getFilterExpres() {return strFilter; }
+        const std::string &getFilterExpres() {return strFilter; }
         void setFilterExpres(const std::string& filter) { strFilter = filter; }
 
-        const std::set<std::string> getRejectIPs() { return setRejectIp; }
+        const std::set<std::string> &getRejectIPs() { return setRejectIp; }
         void setRejectIPs(const std::set<std::string> &ips) { setRejectIp = ips; }
 
         const std::set<uint16_t>& getRejectPorts() { return setRejectPort; }
@@ -59,6 +59,7 @@ class StringParser
         template <typename Container>
         static void parseAndInsert(const std::string& row, char unit, Container& container)
         {
+            // 대부분의 STL 컨테이너는 원소 타입을 value_type 이라는 이름으로 제공
             typedef typename Container::value_type T;
             std::stringstream ss(row);
             std::string token;
