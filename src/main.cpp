@@ -47,14 +47,15 @@ int main(int argc, char **argv)
 #if 0
     try
     {
-        std::string device = "eth0";
+        std::string targetDev = ReadConf::getInstance().getCaptureInterface();
+        bool Promiscuous = ReadConf::getInstance().getPromiscuousMode();
 
-        CapturePkt capturer(device);
+        CapturePkt capturer(targetDev, Promiscuous);
 
         CaptureLoggerTest logger;
         capturer.addObserver(&logger);
 
-        std::cout << "Starting packet capture on device: " << device << std::endl;
+        std::cout << "Starting packet capture on device: " << targetDev << std::endl;
         capturer.startCapture();
     }
     catch (const std::exception& ex)

@@ -25,11 +25,12 @@ void PacketNotifier::notify(const struct pcap_pkthdr* header, const u_char* pack
     }
 }
 
-CapturePkt::CapturePkt(const std::string& device)
+CapturePkt::CapturePkt(const std::string& device, const bool &Promiscuous)
+
 {
     char errbuf[PCAP_ERRBUF_SIZE] = {0,};
 
-    handle = pcap_open_live(device.c_str(), BUFSIZ, 1, 1000, errbuf);
+    handle = pcap_open_live(device.c_str(), BUFSIZ, Promiscuous, 1000, errbuf);
     if (!handle)
     {
         throw std::runtime_error(

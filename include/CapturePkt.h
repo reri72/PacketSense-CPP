@@ -31,7 +31,7 @@ class CapturePkt : public PacketNotifier
                                 const u_char* packet);
 
     public:
-        CapturePkt(const std::string& device);
+        CapturePkt(const std::string& device, const bool &Promiscuous);
         ~CapturePkt();
 
         void startCapture(int packetCount = 0);

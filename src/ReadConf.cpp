@@ -38,7 +38,7 @@ void ReadConf::loadConfig(const std::string& filename)
                 if (key == INTERFACE)
                 {
                     value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
-                    StringParser::parseAndInsert(value, ',', setInterface);
+                    targetInterface = value;
                 }
                 else if (key == PROMISCUOUS)
                 {
@@ -77,10 +77,7 @@ void ReadConf::loadConfig(const std::string& filename)
 
 void ReadConf::printAllConfig()
 {
-    cout << INTERFACE << " : ";
-    for (set<string>::iterator it = setInterface.begin(); it != setInterface.end(); it++)
-        cout << *it  << " ";
-    cout << endl;
+    cout << INTERFACE << " : " << targetInterface << endl;
 
     cout << PROMISCUOUS << " : " << IsPromiscuous << endl;
 

@@ -15,8 +15,8 @@ class ReadConf : public Singleton<ReadConf>
         void loadConfig(const std::string& filename);
         void printAllConfig();
         
-        const std::set<std::string> &getCaptureInterfaces() { return setInterface; }
-        void setCaptureInterfaces(std::set<std::string>& interfaces) { setInterface = interfaces; }
+        const std::string &getCaptureInterface() { return targetInterface; }
+        void setCaptureInterface(std::string interface) { targetInterface = interface; }
 
         const bool &getPromiscuousMode() { return IsPromiscuous; }
         void setPromiscuousMode(const bool& mode) { IsPromiscuous = mode; }
@@ -38,7 +38,7 @@ class ReadConf : public Singleton<ReadConf>
         #define ITEMSIZE    5
 
         #define INTERFACE "caputre_interface"
-        std::set<std::string> setInterface;
+        std::string targetInterface;
 
         #define PROMISCUOUS "promiscuous_mode"
         bool IsPromiscuous;
