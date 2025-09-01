@@ -1,6 +1,6 @@
 CC = g++
 CXXFLAGS = -Wall -g -Iinclude
-LDFLAGS = -lpcap
+LDFLAGS = -lpcap -lsqlite3
 SRC_DIR = src
 OBJ_DIR = obj
 

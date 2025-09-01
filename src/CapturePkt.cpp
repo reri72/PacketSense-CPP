@@ -21,7 +21,14 @@ void PacketNotifier::notify(const struct pcap_pkthdr* header, const u_char* pack
     std::lock_guard<std::mutex> lock(mtx);
     for (PacketListener* obs : observers)
     {
-        obs->onPacket(header, packet);
+        try
+        {
+            obs->onPacket(header, packet);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "PacketListener error: " << e.what() << std::endl;
+        }
     }
 }
 
@@ -54,6 +61,7 @@ CapturePkt::~CapturePkt()
 
 void CapturePkt::startCapture(int packetCount)
 {
+    //                                                  userData
     if (pcap_loop(handle, packetCount, packetHandler, reinterpret_cast<u_char*>(this)) < 0)
     {
         throw std::runtime_error(std::string("pcap_loop() failed: ") + pcap_geterr(handle));
@@ -68,6 +76,13 @@ void CapturePkt::stopCapture()
 void CapturePkt::packetHandler(u_char* userData, const struct pcap_pkthdr* header, const u_char* packet)
 {
     CapturePkt* capturer = reinterpret_cast<CapturePkt*>(userData);
+
+    std::cout << "Captured at: " << header->ts.tv_sec
+            << "." << header->ts.tv_usec
+            << " len: " << header->len
+            << " caplen: " << header->caplen
+            << std::endl;
+
     capturer->notify(header, packet);
 }
 

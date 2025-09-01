@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "ReadConf.h"
+#include "SqliteClient.h"
 #include "CapturePkt.h"
 
 class CaptureLoggerTest : public PacketListener
@@ -43,6 +44,41 @@ int main(int argc, char **argv)
 
     ReadConf::getInstance().loadConfig(configFile);
     ReadConf::getInstance().printAllConfig();
+
+#if 1
+    SqliteClient db("ps-cpp.db");
+    if (!db.connect())
+    {
+        return 1;
+    }
+
+    db.executeQuery("CREATE TABLE IF NOT EXISTS ps_table ( \
+                        id        INTEGER PRIMARY KEY AUTOINCREMENT, \
+                        ts_sec    INTEGER, \
+                        ts_usec   INTEGER, \
+                        caplen    INTEGER, \
+                        pktlen    INTEGER, \
+                        src_mac   TEXT, \
+                        dst_mac   TEXT, \
+                        src_ip    TEXT, \
+                        dst_ip    TEXT, \
+                        src_port  INTEGER, \
+                        dst_port  INTEGER);");
+
+    db.executeQuery("INSERT INTO ps_table VALUES (1, 1693560000, 123456, 60, 60, \"AA:BB:CC:DD:EE:FF\", \"11:22:33:44:55:66\", \"192.168.0.1\", \"192.168.0.100\", 12345, 80);");
+    db.executeQuery("INSERT INTO ps_table VALUES (2, 1693560000, 123456, 60, 60, \"AA:BB:CC:DD:EE:FF\", \"11:22:33:44:55:66\", \"192.168.0.1\", \"192.168.0.100\", 12345, 90);");
+
+    std::vector<std::vector<std::string>> rows = db.fetchQuery("SELECT * FROM ps_table;");
+
+    std::size_t i = 0;
+    for (i = 0; i < rows.size(); ++i)
+    {
+        std::vector<std::string> row = rows[i];
+        std::cout << "id : " << row[0] << std::endl;
+    }
+
+    db.disconnect();
+#endif
 
 #if 0
     try
