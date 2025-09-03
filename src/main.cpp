@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "LogManager.h"
 #include "ReadConf.h"
 #include "SqliteClient.h"
 #include "CapturePkt.h"
@@ -35,17 +36,19 @@ int main(int argc, char **argv)
         }
     }
 
+    ILOG("Hello ps-cpp!");
+
     if (configFile.empty())
     {
-        std::cerr << "Config file is required." << std::endl;
-        std::cerr << "Usage: " << argv[0] << " -c <config_file>" << std::endl;
+        WLOG("Config file is required.");
+        WLOG("Usage: ps-cpp -c <config_file>");
         return 1;
     }
 
     ReadConf::getInstance().loadConfig(configFile);
     ReadConf::getInstance().printAllConfig();
 
-#if 1
+#if 0
     SqliteClient db("ps-cpp.db");
     if (!db.connect())
     {
