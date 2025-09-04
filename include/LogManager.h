@@ -32,7 +32,7 @@ namespace Logger
                         3
                     )
                 );
-                logger_->set_level(spdlog::level::info);
+                logger_->set_level(spdlog::level::debug);
                 // 날짜 시간 파일명:라인 로그레벨 내용
                 logger_->set_pattern("%Y-%m-%d %H:%M:%S : %s:%# : %l : %v");
             }
@@ -45,8 +45,23 @@ namespace Logger
     };
 }
 
-#define ILOG(...)  SPDLOG_LOGGER_INFO(Logger::FileLogger::getInstance().get_logger(), __VA_ARGS__)
-#define WLOG(...)  SPDLOG_LOGGER_WARN(Logger::FileLogger::getInstance().get_logger(), __VA_ARGS__)
-#define ELOG(...)  SPDLOG_LOGGER_ERROR(Logger::FileLogger::getInstance().get_logger(), __VA_ARGS__)
+#define DLOG(...) \
+        Logger::FileLogger::getInstance().get_logger()->log( \
+        spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, \
+        spdlog::level::debug, __VA_ARGS__)
 
+#define ILOG(...) \
+        Logger::FileLogger::getInstance().get_logger()->log( \
+        spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, \
+        spdlog::level::info, __VA_ARGS__)
+
+#define WLOG(...) \
+        Logger::FileLogger::getInstance().get_logger()->log( \
+        spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, \
+        spdlog::level::warn, __VA_ARGS__)
+
+#define ELOG(...) \
+        Logger::FileLogger::getInstance().get_logger()->log( \
+        spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, \
+        spdlog::level::err, __VA_ARGS__)
 #endif
