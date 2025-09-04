@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ReadConf.h"
+#include "LogManager.h"
 
 using namespace std;
 
@@ -12,7 +13,7 @@ void ReadConf::loadConfig(const std::string& filename)
 
     if (!file.is_open())
     {
-        cout << "There is no file \"" << filename << "\" " << endl;
+        CLOG("There is no file {}", filename);
         exit(0);
     }
     
@@ -77,19 +78,17 @@ void ReadConf::loadConfig(const std::string& filename)
 
 void ReadConf::printAllConfig()
 {
-    cout << INTERFACE << " : " << targetInterface << endl;
+    ILOG("{} : {}", INTERFACE, targetInterface);
 
-    cout << PROMISCUOUS << " : " << IsPromiscuous << endl;
+    ILOG("{} : {}", PROMISCUOUS, IsPromiscuous);
 
-    cout << FILTER << " : " << strFilter << endl;
+    ILOG("{} : {}", FILTER , strFilter);
 
-    cout << REJECTIPS << " : ";
+    ILOG("{} : ", REJECTIPS);
     for (set<string>::iterator it = setRejectIp.begin(); it != setRejectIp.end(); it++)
-        cout << *it  << " ";
-    cout << endl;
+        ILOG("{} ", *it);
 
-    cout << REJECTPORTS << " : ";
+    ILOG("{} : ", REJECTPORTS);
     for (set<uint16_t>::iterator it = setRejectPort.begin(); it != setRejectPort.end(); it++)
-        cout << *it  << " ";
-    cout << endl;
+        ILOG("{} ", *it);
 }

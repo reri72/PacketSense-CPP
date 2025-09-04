@@ -29,12 +29,15 @@ class CapturePkt : public PacketNotifier
         static void packetHandler(u_char* userData,
                                 const struct pcap_pkthdr* header,
                                 const u_char* packet);
+        void handlePacket(const struct pcap_pkthdr* header,
+                                const u_char* packet);
 
     public:
         CapturePkt(const std::string& device, const bool &Promiscuous);
         ~CapturePkt();
 
-        void startCapture(int packetCount = 0);
+        void startCapture();
+        void captureThread();
         void stopCapture();
 };
 

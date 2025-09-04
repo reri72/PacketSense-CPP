@@ -64,4 +64,10 @@ namespace Logger
         Logger::FileLogger::getInstance().get_logger()->log( \
         spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, \
         spdlog::level::err, __VA_ARGS__)
+
+#define CLOG(...) \
+        Logger::FileLogger::getInstance().get_logger()->log( \
+        spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, \
+        spdlog::level::critical, __VA_ARGS__)
+
 #endif

@@ -40,8 +40,8 @@ int main(int argc, char **argv)
 
     if (configFile.empty())
     {
-        WLOG("Config file is required.");
-        WLOG("Usage: ps-cpp -c <config_file>");
+        CLOG("Config file is required.");
+        CLOG("Usage: ps-cpp -c <config_file>");
         return 1;
     }
 
@@ -89,17 +89,28 @@ int main(int argc, char **argv)
         std::string targetDev = ReadConf::getInstance().getCaptureInterface();
         bool Promiscuous = ReadConf::getInstance().getPromiscuousMode();
 
-        CapturePkt capturer(targetDev, Promiscuous);
+        CapturePkt* capturer = new CapturePkt(targetDev, Promiscuous);
 
         CaptureLoggerTest logger;
-        capturer.addObserver(&logger);
+        capturer->addObserver(&logger);
 
-        std::cout << "Starting packet capture on device: " << targetDev << std::endl;
-        capturer.startCapture();
+        ILOG("Starting packet capture on device: {}", targetDev);
+
+        capturer->startCapture();
+
+        int o = 0;
+        while (o < 5)
+        {
+            sleep(1);
+            o++;
+        }
+
+        capturer->stopCapture();
+        delete capturer;
     }
     catch (const std::exception& ex)
     {
-        std::cerr << "Exception: " << ex.what() << std::endl;
+        ELOG("Exception: {}", ex.what());
         return 1;
     }
 #endif

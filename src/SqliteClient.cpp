@@ -1,4 +1,5 @@
 #include "SqliteClient.h"
+#include "LogManager.h"
 
 #include <iostream>
 
@@ -21,7 +22,7 @@ bool SqliteClient::connect()
 
     if (res != SQLITE_OK)
     {
-        std::cerr << "Can't open database: " << sqlite3_errmsg(_db) << std::endl;
+        ELOG("Can't open database: {}", sqlite3_errmsg(_db));
         return false;
     }
 
@@ -44,7 +45,7 @@ bool SqliteClient::executeQuery(const std::string& query)
 
     if (res != SQLITE_OK)
     {
-        std::cerr << "SQL error: " << errmsg << std::endl;
+        ELOG("SQL error: {}", errmsg);
         sqlite3_free(errmsg);
         return false;
     }
@@ -60,7 +61,7 @@ std::vector<std::vector<std::string>> SqliteClient::fetchQuery(const std::string
     int res = sqlite3_prepare_v2(_db, query.c_str(), -1, &stmt, nullptr);
     if (res != SQLITE_OK)
     {
-        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(_db) << std::endl;
+        ELOG("Failed to prepare statement: {}", sqlite3_errmsg(_db));
         return results;
     }
 
