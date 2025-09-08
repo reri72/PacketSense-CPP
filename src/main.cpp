@@ -5,6 +5,7 @@
 #include "ReadConf.h"
 #include "SqliteClient.h"
 #include "CapturePkt.h"
+#include "PacketBlocker.h"
 
 class CaptureLoggerTest : public PacketListener
 {
@@ -91,10 +92,13 @@ int main(int argc, char **argv)
 
         CapturePkt* capturer = new CapturePkt(targetDev, Promiscuous);
 
+        ILOG("Starting packet capture on device: {}", targetDev);
+        
         CaptureLoggerTest logger;
         capturer->addObserver(&logger);
 
-        ILOG("Starting packet capture on device: {}", targetDev);
+        PacketBlocker blocker;
+        capturer->addObserver(&blocker);
 
         capturer->startCapture();
 
