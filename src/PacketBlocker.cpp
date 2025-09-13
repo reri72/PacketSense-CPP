@@ -6,15 +6,33 @@
 #include <string>
 #include <set>
 
+#include <netinet/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <net/if_arp.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 void PacketBlocker::onPacket(const struct pcap_pkthdr* header, const u_char* packet)
 {
-    const struct ip* iph = (struct ip*)(packet + 14);
+    const struct ethhdr *eth = (struct ethhdr *)packet;
+    uint16_t eth_type = ntohs(eth->h_proto);
+
+    const struct ip *iph = nullptr;
+    if (eth_type == 0x0800)
+    {
+        iph = (struct ip *)(packet + 14);   // ipv4
+    }
+    else if (eth_type == 0x8100)
+    {
+        iph = (struct ip *)(packet + 18);    // vlan(802.1Q)
+    }
+    else
+    {
+        return;
+    }
+
     if (iph->ip_p != IPPROTO_TCP)
     {
         return;
