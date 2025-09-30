@@ -13,7 +13,7 @@ class PacketLogger : public PacketListener
     private:
         SqliteClient _db;
         void createTable();
-        void insertPacketData(const struct pcap_pkthdr* header, const u_char* packet);
+        std::string insertPacketData(const struct pcap_pkthdr* header, const u_char* packet);
 };
 
 #endif

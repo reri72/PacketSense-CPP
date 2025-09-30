@@ -69,10 +69,14 @@ void PacketLogger::createTable()
 
 void PacketLogger::onPacket(const struct pcap_pkthdr* header, const u_char* packet)
 {
-    insertPacketData(header, packet);
+    std::string query = insertPacketData(header, packet);
+
+    if (query.size())
+        _db.executeQuery(query);
+
 }
 
-void PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_char* packet)
+std::string PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_char* packet) // 프로토콜 별로 std::string 반환하는 함수 만들면 괜찮겠다. 바인드 써서
 {
     const struct ethhdr *eth = (struct ethhdr *)packet;
     uint16_t eth_type = ntohs(eth->h_proto);
@@ -112,7 +116,7 @@ void PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
                 << src_port << ", "
                 << dst_port << ");";
 
-            _db.executeQuery(query.str());
+            return (query.str());
         }
         else if (iph->ip_p == IPPROTO_UDP)
         {
@@ -141,7 +145,7 @@ void PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
                 << dstport << ", "
                 << length << ");";
 
-            _db.executeQuery(query.str());
+            return (query.str());
         }
     }
     else if (eth_type == 0x0806) // arp
@@ -149,14 +153,14 @@ void PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
         if (header->caplen < 14 + sizeof(struct arphdr))
         {
             // 이더헤더랑 arp헤더보다 길이가 작으면 리턴
-            return;
+            return nullptr;
         }
 
         const struct arphdr *arp = (struct arphdr *)(packet + 14);
 
         if (ntohs(arp->ar_pro) != 0x0800)
         {
-            return; // ipv4만 처리
+            return nullptr; // ipv4만 처리
         }
 
         int hlen = arp->ar_hln; // 하드웨어 주소 길이는 보통 6
@@ -170,7 +174,7 @@ void PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
         if (header->caplen < 14 + sizeof(struct arphdr) + 2*hlen + 2*plen)
         {
             ELOG("Invalid packet length");
-            return;
+            return nullptr;
         }
 
         char sender_ip[INET_ADDRSTRLEN] = {0,};
@@ -198,6 +202,8 @@ void PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
               << target_mac << "', '"
               << target_ip << "');";
 
-        _db.executeQuery(query.str());
+        return (query.str());
     }
+
+    return nullptr;
 }
