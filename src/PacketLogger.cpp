@@ -153,14 +153,14 @@ std::string PacketLogger::insertPacketData(const struct pcap_pkthdr* header, con
         if (header->caplen < 14 + sizeof(struct arphdr))
         {
             // 이더헤더랑 arp헤더보다 길이가 작으면 리턴
-            return nullptr;
+            return "";
         }
 
         const struct arphdr *arp = (struct arphdr *)(packet + 14);
 
         if (ntohs(arp->ar_pro) != 0x0800)
         {
-            return nullptr; // ipv4만 처리
+            return ""; // ipv4만 처리
         }
 
         int hlen = arp->ar_hln; // 하드웨어 주소 길이는 보통 6
@@ -174,7 +174,7 @@ std::string PacketLogger::insertPacketData(const struct pcap_pkthdr* header, con
         if (header->caplen < 14 + sizeof(struct arphdr) + 2*hlen + 2*plen)
         {
             ELOG("Invalid packet length");
-            return nullptr;
+            return "";
         }
 
         char sender_ip[INET_ADDRSTRLEN] = {0,};
@@ -205,5 +205,5 @@ std::string PacketLogger::insertPacketData(const struct pcap_pkthdr* header, con
         return (query.str());
     }
 
-    return nullptr;
+    return "";
 }
