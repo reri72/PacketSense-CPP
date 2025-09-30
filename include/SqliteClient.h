@@ -4,6 +4,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <vector>
+#include <mutex>
 
 class SqliteClient
 {
@@ -19,7 +20,7 @@ class SqliteClient
     private:
         sqlite3* _db;
         std::string dbfile;
-
+        std::mutex mtx;
 };
 
 #endif

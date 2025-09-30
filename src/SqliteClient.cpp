@@ -40,6 +40,8 @@ void SqliteClient::disconnect()
 
 bool SqliteClient::executeQuery(const std::string& query)
 {
+    std::lock_guard<std::mutex> lock(mtx);
+
     char *errmsg = nullptr;
     int res = sqlite3_exec(_db, query.c_str(), nullptr, nullptr, &errmsg);
 
@@ -55,6 +57,8 @@ bool SqliteClient::executeQuery(const std::string& query)
 
 std::vector<std::vector<std::string>> SqliteClient::fetchQuery(const std::string& query)
 {
+    std::lock_guard<std::mutex> lock(mtx);
+    
     std::vector<std::vector<std::string>> results;
     sqlite3_stmt *stmt = nullptr;
 
