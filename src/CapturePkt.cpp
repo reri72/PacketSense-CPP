@@ -36,8 +36,7 @@ void PacketNotifier::notify(const struct pcap_pkthdr* header, const u_char* pack
     }
 }
 
-CapturePkt::CapturePkt(const std::string& device, const bool &Promiscuous)
-
+CapturePkt::CapturePkt(const std::string& device, const bool &Promiscuous, const std::string& filter_rule)
 {
     char errbuf[PCAP_ERRBUF_SIZE] = {0,};
 
@@ -52,7 +51,36 @@ CapturePkt::CapturePkt(const std::string& device, const bool &Promiscuous)
 
     if (errbuf[0] != '\0')
     {
-        WLOG("pcap_open_live: {}", errbuf);
+        WLOG("pcap_open_live : {}", errbuf);
+    }
+
+    std::cout << "filter_rule " << filter_rule << std::endl;
+    // 네트워크 주소와 서브넷 마스크 조회
+    if (pcap_lookupnet(device.c_str(), &net, &mask, errbuf) == -1)
+    {
+        WLOG("pcap_lookupnet failed '{}' : {}", device, errbuf);
+        net = 0;
+        mask = 0;
+    }
+
+    if (!filter_rule.empty())
+    {
+        if (pcap_compile(handle, &fp, filter_rule.c_str(), 0, mask) == -1)
+        {
+            std::string err = pcap_geterr(handle);
+            ELOG("pcap_compile failed : {}", err);
+            throw std::runtime_error("pcap_compile failed : " + err);
+        }
+
+        if (pcap_setfilter(handle, &fp) == -1)
+        {
+            std::string err = pcap_geterr(handle);
+            ELOG("pcap_setfilter failed : {}", err);
+            pcap_freecode(&fp); // 메모리 누수 방지
+            throw std::runtime_error("pcap_setfilter failed : " + err);
+        }
+
+        ILOG("BPF filter '{}' applied successfully on device '{}'.", filter_rule, device);
     }
 }
 
@@ -60,6 +88,7 @@ CapturePkt::~CapturePkt()
 {
     if (handle)
     {
+        pcap_freecode(&fp);
         pcap_close(handle);
     }
 }

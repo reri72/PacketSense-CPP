@@ -54,8 +54,9 @@ int main(int argc, char **argv)
     {
         std::string targetDev = ReadConf::getInstance().getCaptureInterface();
         bool Promiscuous = ReadConf::getInstance().getPromiscuousMode();
+        std::string filterRule = ReadConf::getInstance().getFilterExpres();
 
-        CapturePkt* capturer = new CapturePkt(targetDev, Promiscuous);
+        CapturePkt* capturer = new CapturePkt(targetDev, Promiscuous, filterRule);
 
         ILOG("Starting packet capture on device: {}", targetDev);
         
