@@ -56,7 +56,7 @@ int main(int argc, char **argv)
         bool Promiscuous = ReadConf::getInstance().getPromiscuousMode();
         std::string filterRule = ReadConf::getInstance().getFilterExpres();
 
-        CapturePkt* capturer = new CapturePkt(targetDev, Promiscuous, filterRule);
+        std::unique_ptr<CapturePkt> capturer = std::make_unique<CapturePkt>(targetDev, Promiscuous, filterRule);
 
         ILOG("Starting packet capture on device: {}", targetDev);
         
@@ -79,7 +79,6 @@ int main(int argc, char **argv)
         }
 
         capturer->stopCapture();
-        delete capturer;
     }
     catch (const std::exception& ex)
     {
