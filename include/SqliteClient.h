@@ -6,6 +6,8 @@
 #include <vector>
 #include <mutex>
 
+#define MAX_RETRY_COUNT 3
+
 class SqliteClient
 {
     public:
@@ -14,8 +16,16 @@ class SqliteClient
         
         bool connect();
         void disconnect();
+        bool isConnected() const;
+        
         bool executeQuery(const std::string& query);
         std::vector<std::vector<std::string>> fetchQuery(const std::string& query);
+
+        bool prepareStatement(const std::string& sql, sqlite3_stmt **stmt);
+        bool bindText(sqlite3_stmt *stmt, int index, const std::string& value);
+        bool bindInt(sqlite3_stmt *stmt, int index, int value);
+        bool executeStatement(sqlite3_stmt *stmt);
+        void finalizeStatement(sqlite3_stmt *stmt);
 
     private:
         sqlite3* _db;
