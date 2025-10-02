@@ -31,6 +31,8 @@ class CapturePkt : public PacketNotifier
         bpf_u_int32 net;
         bpf_u_int32 mask;
 
+        std::thread captureThread_;
+
         static void packetHandler(u_char* userData,
                                 const struct pcap_pkthdr* header,
                                 const u_char* packet);
@@ -38,7 +40,7 @@ class CapturePkt : public PacketNotifier
                                 const u_char* packet);
 
     public:
-        CapturePkt(const std::string& device, const bool &Promiscuous, const std::string& filter_rule = "");
+        CapturePkt(const std::string& device, bool Promiscuous, const std::string& filter_rule = "");
         ~CapturePkt();
 
         void startCapture();

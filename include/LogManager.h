@@ -32,7 +32,10 @@ namespace Logger
                         3
                     )
                 );
-                logger_->set_level(spdlog::level::debug);
+                
+                // logger_->set_level(spdlog::level::debug);
+                logger_->flush_on(spdlog::level::info);
+
                 // 날짜 시간 파일명:라인 로그레벨 내용
                 logger_->set_pattern("%Y-%m-%d %H:%M:%S : %s:%# : %l : %v");
             }

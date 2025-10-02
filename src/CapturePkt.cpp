@@ -36,7 +36,7 @@ void PacketNotifier::notify(const struct pcap_pkthdr* header, const u_char* pack
     }
 }
 
-CapturePkt::CapturePkt(const std::string& device, const bool &Promiscuous, const std::string& filter_rule)
+CapturePkt::CapturePkt(const std::string& device, bool Promiscuous, const std::string& filter_rule)
 {
     char errbuf[PCAP_ERRBUF_SIZE] = {0,};
 
@@ -88,6 +88,12 @@ CapturePkt::~CapturePkt()
 {
     if (handle)
     {
+        stopCapture();
+        if (captureThread_.joinable())
+        {
+            captureThread_.join();
+        }
+
         pcap_freecode(&fp);
         pcap_close(handle);
     }
@@ -95,8 +101,7 @@ CapturePkt::~CapturePkt()
 
 void CapturePkt::startCapture()
 {
-    std::thread t(&CapturePkt::captureThread, this);
-    t.detach();
+    captureThread_ = std::thread(&CapturePkt::captureThread, this);
 }
 
 void CapturePkt::captureThread()
