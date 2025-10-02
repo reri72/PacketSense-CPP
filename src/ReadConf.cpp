@@ -39,30 +39,39 @@ void ReadConf::loadConfig(const std::string& filename)
                 if (key == INTERFACE)
                 {
                     value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
-                    targetInterface = value;
+                    m_targetInterface  = value;
                 }
                 else if (key == PROMISCUOUS)
                 {
                     value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
                     transform(value.begin(), value.end(), value.begin(), ::toupper);
                     if (value[0] == '1' || value[0] == 'T')
-                        IsPromiscuous = true;
+                        m_isPromiscuous  = true;
                     else
-                        IsPromiscuous = false;
+                        m_isPromiscuous  = false;
+                }
+                else if (key == REJECT)
+                {
+                    value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
+                    transform(value.begin(), value.end(), value.begin(), ::toupper);
+                    if (value[0] == '1' || value[0] == 'T')
+                        m_isReject = true;
+                    else
+                        m_isReject = false;
                 }
                 else if (key == FILTER)
                 {
-                    strFilter = value;
+                    m_filterExpres = value;
                 }
                 else if (key == REJECTIPS)
                 {
                     value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
-                    StringParser::parseAndInsert(value, ',', setRejectIp);
+                    StringParser::parseAndInsert(value, ',', m_setRejectIps);
                 }
                 else if (key == REJECTPORTS)
                 {
                     value.erase(remove_if(value.begin(), value.end(), ::isspace), value.end());
-                    StringParser::parseAndInsert(value, ',', setRejectPort);
+                    StringParser::parseAndInsert(value, ',', m_setRejectPorts);
                 }
                 else
                 {
@@ -78,17 +87,19 @@ void ReadConf::loadConfig(const std::string& filename)
 
 void ReadConf::printAllConfig()
 {
-    ILOG("{} : {}", INTERFACE, targetInterface);
+    ILOG("{} : {}", INTERFACE, m_targetInterface );
 
-    ILOG("{} : {}", PROMISCUOUS, IsPromiscuous);
+    ILOG("{} : {}", PROMISCUOUS, m_isPromiscuous );
 
-    ILOG("{} : {}", FILTER , strFilter);
+    ILOG("{} : {}", FILTER , m_filterExpres);
+
+    ILOG("{} : {}", REJECT, m_isReject);
 
     ILOG("{} : ", REJECTIPS);
-    for (set<string>::iterator it = setRejectIp.begin(); it != setRejectIp.end(); it++)
+    for (set<string>::iterator it = m_setRejectIps.begin(); it != m_setRejectIps.end(); it++)
         ILOG("{} ", *it);
 
     ILOG("{} : ", REJECTPORTS);
-    for (set<uint16_t>::iterator it = setRejectPort.begin(); it != setRejectPort.end(); it++)
+    for (set<uint16_t>::iterator it = m_setRejectPorts.begin(); it != m_setRejectPorts.end(); it++)
         ILOG("{} ", *it);
 }

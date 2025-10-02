@@ -15,42 +15,48 @@ class ReadConf : public Singleton<ReadConf>
         void loadConfig(const std::string& filename);
         void printAllConfig();
         
-        const std::string &getCaptureInterface() { return targetInterface; }
-        void setCaptureInterface(std::string interface) { targetInterface = interface; }
+        const std::string &getCaptureInterface() const { return m_targetInterface ; }
+        void setCaptureInterface(std::string interface) { m_targetInterface  = interface; }
 
-        const bool &getPromiscuousMode() { return IsPromiscuous; }
-        void setPromiscuousMode(const bool& mode) { IsPromiscuous = mode; }
+        bool getPromiscuousMode() const { return m_isPromiscuous ; }
+        void setPromiscuousMode(const bool mode) { m_isPromiscuous  = mode; }
 
-        const std::string &getFilterExpres() {return strFilter; }
-        void setFilterExpres(const std::string& filter) { strFilter = filter; }
+        const std::string &getFilterExpres() const {return m_filterExpres; }
+        void setFilterExpres(const std::string& filter) { m_filterExpres = filter; }
 
-        const std::set<std::string> &getRejectIPs() { return setRejectIp; }
-        void setRejectIPs(const std::set<std::string> &ips) { setRejectIp = ips; }
+        bool getReject() const { return m_isReject; }
+        void setReject(bool reject) { m_isReject = reject; }
 
-        const std::set<uint16_t>& getRejectPorts() { return setRejectPort; }
-        void setRejectPorts(const std::set<uint16_t>& ports) { setRejectPort = ports; }
+        const std::set<std::string> &getRejectIPs() const { return m_setRejectIps; }
+        void setRejectIPs(const std::set<std::string> &ips) { m_setRejectIps = ips; }
+
+        const std::set<uint16_t>& getRejectPorts() const { return m_setRejectPorts; }
+        void setRejectPorts(const std::set<uint16_t>& ports) { m_setRejectPorts = ports; }
 
     private:
-        ReadConf(){};
-        ~ReadConf(){};
+        ReadConf() = default;
+        ~ReadConf() = default;
 
     private:
         #define ITEMSIZE    5
 
-        #define INTERFACE "caputre_interface"
-        std::string targetInterface;
+        static constexpr const char* const INTERFACE = "capture_interface";
+        std::string m_targetInterface ;
 
-        #define PROMISCUOUS "promiscuous_mode"
-        bool IsPromiscuous;
+        static constexpr const char* const PROMISCUOUS = "promiscuous_mode";
+        bool m_isPromiscuous = false;
 
-        #define FILTER "capture_filter"
-        std::string strFilter;
+        static constexpr const char* const FILTER = "capture_filter";
+        std::string m_filterExpres;
 
-        #define REJECTIPS "reject_ips"
-        std::set<std::string> setRejectIp;
+        static constexpr const char* const REJECT = "reject";
+        bool m_isReject = false;
 
-        #define REJECTPORTS "reject_ports"
-        std::set<uint16_t> setRejectPort;
+        static constexpr const char* const REJECTIPS = "reject_ips";
+        std::set<std::string> m_setRejectIps;
+
+       static constexpr const char* const REJECTPORTS = "reject_ports";
+        std::set<uint16_t> m_setRejectPorts;
 };
 
 class StringParser

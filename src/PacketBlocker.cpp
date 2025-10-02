@@ -63,19 +63,23 @@ void PacketBlocker::onPacket(const struct pcap_pkthdr* header, const u_char* pac
 
     const std::set<std::string> &rejectIps = ReadConf::getInstance().getRejectIPs();
     const std::set<uint16_t> &rejectPorts = ReadConf::getInstance().getRejectPorts();
+    const bool reject = ReadConf::getInstance().getReject();
 
-    if (rejectIps.find(src_ip) != rejectIps.end() && rejectPorts.find(dst_port) != rejectPorts.end())
+    if (reject == true)
     {
-        ILOG("Reset tcp session {}:{} -> {}:{}", dst_ip, dst_port, src_ip, src_port);
+        if (rejectIps.find(src_ip) != rejectIps.end() && rejectPorts.find(dst_port) != rejectPorts.end())
+        {
+            ILOG("Reset tcp session {}:{} -> {}:{}", dst_ip, dst_port, src_ip, src_port);
 
-        uint16_t ip_id = ntohs(iph->ip_id);
-        uint8_t ttl    = iph->ip_ttl;
+            uint16_t ip_id = ntohs(iph->ip_id);
+            uint8_t ttl    = iph->ip_ttl;
 
-        // client -> server
-        send_rst(src_ip.c_str(), dst_ip.c_str(), src_port, dst_port, ntohl(tcph->seq), ntohl(tcph->ack_seq), ip_id, ttl);
+            // client -> server
+            send_rst(src_ip.c_str(), dst_ip.c_str(), src_port, dst_port, ntohl(tcph->seq), ntohl(tcph->ack_seq), ip_id, ttl);
 
-        // server -> client
-        send_rst(dst_ip.c_str(), src_ip.c_str(), dst_port, src_port, ntohl(tcph->ack_seq), ntohl(tcph->seq) + 1, ip_id, ttl);
+            // server -> client
+            send_rst(dst_ip.c_str(), src_ip.c_str(), dst_port, src_port, ntohl(tcph->ack_seq), ntohl(tcph->seq) + 1, ip_id, ttl);
+        }
     }
 }
 
