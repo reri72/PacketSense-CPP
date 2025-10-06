@@ -75,10 +75,10 @@ void PacketBlocker::onPacket(const struct pcap_pkthdr* header, const u_char* pac
             uint8_t ttl    = iph->ip_ttl;
 
             // client -> server
-            send_rst(src_ip.c_str(), dst_ip.c_str(), src_port, dst_port, ntohl(tcph->seq), ntohl(tcph->ack_seq), ip_id, ttl);
+            sendReset(src_ip.c_str(), dst_ip.c_str(), src_port, dst_port, ntohl(tcph->seq), ntohl(tcph->ack_seq), ip_id, ttl);
 
             // server -> client
-            send_rst(dst_ip.c_str(), src_ip.c_str(), dst_port, src_port, ntohl(tcph->ack_seq), ntohl(tcph->seq) + 1, ip_id, ttl);
+            sendReset(dst_ip.c_str(), src_ip.c_str(), dst_port, src_port, ntohl(tcph->ack_seq), ntohl(tcph->seq) + 1, ip_id, ttl);
         }
     }
 }
@@ -110,7 +110,7 @@ unsigned short PacketBlocker::checksum(unsigned short *ptr, int nbytes)
     return res;
 }
 
-void PacketBlocker::send_rst(const char* src_ip, const char* dst_ip,
+void PacketBlocker::sendReset(const char* src_ip, const char* dst_ip,
                                 uint16_t src_port, uint16_t dst_port,
                                 uint32_t seq, uint32_t ack_seq,
                                 uint16_t ip_id, uint8_t ttl)

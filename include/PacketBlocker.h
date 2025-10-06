@@ -10,7 +10,7 @@ class PacketBlocker : public PacketListener
     
     private:
         unsigned short checksum(unsigned short *ptr, int nbytes);
-        void send_rst(const char* src_ip, const char* dst_ip,
+        void sendReset(const char* src_ip, const char* dst_ip,
                         uint16_t src_port, uint16_t dst_port,
                         uint32_t seq, uint32_t ack_seq,
                         uint16_t ip_id, uint8_t ttl);
