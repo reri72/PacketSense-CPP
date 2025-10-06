@@ -6,8 +6,6 @@
 #include <vector>
 #include <mutex>
 
-#define MAX_RETRY_COUNT 3
-
 class SqliteClient
 {
     public:

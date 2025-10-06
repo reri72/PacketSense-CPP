@@ -3,27 +3,27 @@
 
 #include "PacketListener.h"
 #include "SqliteClient.h"
+#include "DbProcessor.h"
 
-class PacketLogger : public PacketListener
+class PacketLogger : public DbProcessor
 {
     public:
-        PacketLogger(const std::string &db_file);
+        PacketLogger(SqliteClient* dbClient);
         ~PacketLogger();
         void onPacket(const struct pcap_pkthdr* header, const u_char* packet) override;
     
     private:
-        SqliteClient _db;
-
         sqlite3_stmt* tcp_stmt;
         sqlite3_stmt* udp_stmt;
         sqlite3_stmt* arp_stmt;
 
         int current_retry_count = 0;
         
-        bool tryReconnect();
-        void createTable();
+        void createTable() override;
+        void prepareStatements() override;
+        void finalizeStatements() override;
+
         bool insertPacketData(const struct pcap_pkthdr* header, const u_char* packet);
-        void prepareStatements();
 };
 
 #endif

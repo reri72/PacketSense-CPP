@@ -9,31 +9,20 @@
 #include <arpa/inet.h>
 #include <sstream>
 
-PacketLogger::PacketLogger(const std::string& db_file)
-    : _db(db_file), tcp_stmt(nullptr), udp_stmt(nullptr), arp_stmt(nullptr)
+PacketLogger::PacketLogger(SqliteClient* dbClient)
+    : DbProcessor(dbClient), tcp_stmt(nullptr), udp_stmt(nullptr), arp_stmt(nullptr)
 {
-    if (_db.connect())
-    {
-        ILOG("Successfully connected to database: {}", db_file);
-        createTable();
-        prepareStatements();
-    }
-    else
-    {
-        ELOG("Failed to connect to database: {}", db_file);
-    }
+    //
 }
 
 PacketLogger::~PacketLogger()
 {
-    if (tcp_stmt) _db.finalizeStatement(tcp_stmt);
-    if (udp_stmt) _db.finalizeStatement(udp_stmt);
-    if (arp_stmt) _db.finalizeStatement(arp_stmt);
+    //
 }
 
 void PacketLogger::onPacket(const struct pcap_pkthdr* header, const u_char* packet)
 {
-    if (!_db.isConnected())
+    if (!_db->isConnected())
     {
         if (!tryReconnect())
         {
@@ -46,36 +35,8 @@ void PacketLogger::onPacket(const struct pcap_pkthdr* header, const u_char* pack
     if (!res)
     {
         ELOG("Failed insertPacketData. Disconnecting for failover.");
-        _db.disconnect(); 
+        _db->disconnect(); 
     }
-}
-
-bool PacketLogger::tryReconnect()
-{
-    while (current_retry_count < MAX_RETRY_COUNT)
-    {
-        current_retry_count++;
-        WLOG("Reconnect to DB ({}/{})", current_retry_count, MAX_RETRY_COUNT);
-
-        if (_db.connect())
-        {
-            ILOG("Successfully reconnected to DB");
-
-            if (tcp_stmt) { _db.finalizeStatement(tcp_stmt); tcp_stmt = nullptr; }
-            if (udp_stmt) { _db.finalizeStatement(udp_stmt); udp_stmt = nullptr; }
-            if (arp_stmt) { _db.finalizeStatement(arp_stmt); arp_stmt = nullptr; }
-
-            createTable();
-            prepareStatements();
-            
-            current_retry_count = 0;
-
-            return true;
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(1)); 
-    }
-    
-    return false;
 }
 
 void PacketLogger::createTable()
@@ -91,7 +52,7 @@ void PacketLogger::createTable()
                             src_port  INTEGER, \
                             dst_port  INTEGER);";
 
-    _db.executeQuery(tcpquery);
+    _db->executeQuery(tcpquery);
     
     std::string udpquery = "CREATE TABLE IF NOT EXISTS udp_table ( \
                             id          INTEGER PRIMARY KEY AUTOINCREMENT, \
@@ -105,7 +66,7 @@ void PacketLogger::createTable()
                             dst_port    INTEGER, \
                             length      INTEGER );";
 
-    _db.executeQuery(udpquery);
+    _db->executeQuery(udpquery);
 
     std::string arpquery = "CREATE TABLE IF NOT EXISTS arp_table ( \
                             id        INTEGER PRIMARY KEY AUTOINCREMENT, \
@@ -119,7 +80,7 @@ void PacketLogger::createTable()
                             target_mac  TEXT, \
                             target_ip   TEXT);";
 
-    _db.executeQuery(arpquery);
+    _db->executeQuery(arpquery);
 }
 
 bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_char* packet) // 프로토콜 별로 std::string 반환하는 함수 만들면 괜찮겠다. 바인드 써서
@@ -154,16 +115,16 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
             if (tcp_stmt) 
             {
                 // 바인딩은 1부터 시작
-                _db.bindInt(tcp_stmt, 1, header->ts.tv_sec);
-                _db.bindInt(tcp_stmt, 2, header->ts.tv_usec);
-                _db.bindInt(tcp_stmt, 3, header->caplen);
-                _db.bindInt(tcp_stmt, 4, header->len);
-                _db.bindText(tcp_stmt, 5, src_ip);
-                _db.bindText(tcp_stmt, 6, dst_ip);
-                _db.bindInt(tcp_stmt, 7, src_port);
-                _db.bindInt(tcp_stmt, 8, dst_port);
+                _db->bindInt(tcp_stmt, 1, header->ts.tv_sec);
+                _db->bindInt(tcp_stmt, 2, header->ts.tv_usec);
+                _db->bindInt(tcp_stmt, 3, header->caplen);
+                _db->bindInt(tcp_stmt, 4, header->len);
+                _db->bindText(tcp_stmt, 5, src_ip);
+                _db->bindText(tcp_stmt, 6, dst_ip);
+                _db->bindInt(tcp_stmt, 7, src_port);
+                _db->bindInt(tcp_stmt, 8, dst_port);
 
-                return _db.executeStatement(tcp_stmt);
+                return _db->executeStatement(tcp_stmt);
             }
             return false;
         }
@@ -183,17 +144,17 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
             
             if (udp_stmt) 
             {
-                _db.bindInt(udp_stmt, 1, header->ts.tv_sec);
-                _db.bindInt(udp_stmt, 2, header->ts.tv_usec);
-                _db.bindInt(udp_stmt, 3, header->caplen);
-                _db.bindInt(udp_stmt, 4, header->len);
-                _db.bindText(udp_stmt, 5, src_ip);
-                _db.bindText(udp_stmt, 6, dst_ip);
-                _db.bindInt(udp_stmt, 7, src_port);
-                _db.bindInt(udp_stmt, 8, dst_port);
-                _db.bindInt(udp_stmt, 9, length);
+                _db->bindInt(udp_stmt, 1, header->ts.tv_sec);
+                _db->bindInt(udp_stmt, 2, header->ts.tv_usec);
+                _db->bindInt(udp_stmt, 3, header->caplen);
+                _db->bindInt(udp_stmt, 4, header->len);
+                _db->bindText(udp_stmt, 5, src_ip);
+                _db->bindText(udp_stmt, 6, dst_ip);
+                _db->bindInt(udp_stmt, 7, src_port);
+                _db->bindInt(udp_stmt, 8, dst_port);
+                _db->bindInt(udp_stmt, 9, length);
 
-                return _db.executeStatement(udp_stmt);
+                return _db->executeStatement(udp_stmt);
             }
             return false;
         }
@@ -242,17 +203,17 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
 
         if (arp_stmt)
         {
-            _db.bindInt(arp_stmt, 1, header->ts.tv_sec);
-            _db.bindInt(arp_stmt, 2, header->ts.tv_usec);
-            _db.bindInt(arp_stmt, 3, header->caplen);
-            _db.bindInt(arp_stmt, 4, header->len);
-            _db.bindInt(arp_stmt, 5, opcode);
-            _db.bindText(arp_stmt, 6, sender_mac);
-            _db.bindText(arp_stmt, 7, sender_ip);
-            _db.bindText(arp_stmt, 8, target_mac);
-            _db.bindText(arp_stmt, 9, target_ip);
+            _db->bindInt(arp_stmt, 1, header->ts.tv_sec);
+            _db->bindInt(arp_stmt, 2, header->ts.tv_usec);
+            _db->bindInt(arp_stmt, 3, header->caplen);
+            _db->bindInt(arp_stmt, 4, header->len);
+            _db->bindInt(arp_stmt, 5, opcode);
+            _db->bindText(arp_stmt, 6, sender_mac);
+            _db->bindText(arp_stmt, 7, sender_ip);
+            _db->bindText(arp_stmt, 8, target_mac);
+            _db->bindText(arp_stmt, 9, target_ip);
             
-            return _db.executeStatement(arp_stmt);
+            return _db->executeStatement(arp_stmt);
         }
         return false;
     }
@@ -263,20 +224,31 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
 void PacketLogger::prepareStatements()
 {
     std::string tcp_sql = "INSERT INTO tcp_table (ts_sec, ts_usec, caplen, pktlen, src_ip, dst_ip, src_port, dst_port) VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
-    if (!_db.prepareStatement(tcp_sql, &tcp_stmt))
+    if (!_db->prepareStatement(tcp_sql, &tcp_stmt))
     {
         ELOG("Failed to prepare TCP statement.");
     }
     
     std::string udp_sql = "INSERT INTO udp_table (ts_sec, ts_usec, caplen, pktlen, src_ip, dst_ip, src_port, dst_port, length) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
-    if (!_db.prepareStatement(udp_sql, &udp_stmt))
+    if (!_db->prepareStatement(udp_sql, &udp_stmt))
     {
         ELOG("Failed to prepare UDP statement.");
     }
 
     std::string arp_sql = "INSERT INTO arp_table (ts_sec, ts_usec, caplen, pktlen, opcode, sender_mac, sender_ip, target_mac, target_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
-    if (!_db.prepareStatement(arp_sql, &arp_stmt))
+    if (!_db->prepareStatement(arp_sql, &arp_stmt))
     {
         ELOG("Failed to prepare ARP statement.");
     }
+}
+
+void PacketLogger::finalizeStatements()
+{
+    if (tcp_stmt) _db->finalizeStatement(tcp_stmt);
+    if (udp_stmt) _db->finalizeStatement(udp_stmt);
+    if (arp_stmt) _db->finalizeStatement(arp_stmt);
+
+    tcp_stmt = nullptr;
+    udp_stmt = nullptr;
+    arp_stmt = nullptr;
 }

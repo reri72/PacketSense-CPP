@@ -14,6 +14,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+PacketBlocker::PacketBlocker(SqliteClient* dbClient) : DbProcessor(dbClient), block_stmt(nullptr)
+{
+    //
+}
+
+PacketBlocker::~PacketBlocker()
+{
+    //
+}
+
 void PacketBlocker::onPacket(const struct pcap_pkthdr* header, const u_char* packet)
 {
     const struct ethhdr *eth = (struct ethhdr *)packet;
@@ -194,8 +204,47 @@ void PacketBlocker::sendReset(const char* src_ip, const char* dst_ip,
     }
     else
     {
-        ILOG("RST packet to {}:{}", dst_ip, dst_port);
+        if (block_stmt)
+        {
+            _db->bindText(block_stmt, 1, src_ip);
+            _db->bindInt(block_stmt, 2, src_port);
+            _db->bindText(block_stmt, 3, dst_ip);
+            _db->bindInt(block_stmt, 4, dst_port);
+            if (_db->executeStatement(block_stmt))
+            {
+                ILOG("RST packet to {}:{}", dst_ip, dst_port);
+            }
+        }
     }
 
     close(sock);
+}
+
+void PacketBlocker::createTable()
+{
+    std::string blockquery = "CREATE TABLE IF NOT EXISTS block_table ( \
+                            id          INTEGER PRIMARY KEY AUTOINCREMENT, \
+                            src_ip      TEXT, \
+                            src_port    INTEGER, \
+                            dst_ip      TEXT, \
+                            dst_port    INTEGER, \
+                            record      TEXT DEFAULT (datetime('now')) \
+                            );";
+
+    _db->executeQuery(blockquery);
+}
+
+void PacketBlocker::prepareStatements()
+{
+    std::string block_sql = "INSERT INTO block_table (src_ip, src_port, dst_ip, dst_port) VALUES (?, ?, ?, ?);";
+    if (!_db->prepareStatement(block_sql, &block_stmt))
+    {
+        ELOG("Failed to prepare block statement.");
+    }
+}
+
+void PacketBlocker::finalizeStatements()
+{
+    if (block_stmt) _db->finalizeStatement(block_stmt);
+    block_stmt = nullptr;
 }

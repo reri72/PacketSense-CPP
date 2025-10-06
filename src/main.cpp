@@ -63,16 +63,33 @@ int main(int argc, char **argv)
         CaptureLoggerTest logger;
         capturer->addObserver(&logger);
 
-        PacketBlocker blocker;
+        SqliteClient db("ps-cpp.db");
+        if (!db.connect())
+        {
+            ELOG("DB connection failed");
+            return -1;
+        }
+
+        PacketBlocker blocker(&db);
+        if (!blocker.initialize())
+        {
+            ELOG("PacketBlocker initialization failed");
+            return -1;
+        }
         capturer->addObserver(&blocker);
 
-        PacketLogger packetlogger("ps-cpp.db");
+        PacketLogger packetlogger(&db);
+        if (!packetlogger.initialize())
+        {
+            ELOG("PacketLogger initialization failed");
+            return -1;
+        }
         capturer->addObserver(&packetlogger);
 
         capturer->startCapture();
 
         int o = 0;
-        while (o < 5)
+        while (o < 10)
         {
             sleep(1);
             o++;
