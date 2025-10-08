@@ -7,10 +7,12 @@
 #include <netinet/udp.h>
 #include <net/if_arp.h>
 #include <arpa/inet.h>
+#include <netinet/ip_icmp.h>
+
 #include <sstream>
 
 PacketLogger::PacketLogger(SqliteClient* dbClient)
-    : DbProcessor(dbClient), tcp_stmt(nullptr), udp_stmt(nullptr), arp_stmt(nullptr)
+    : DbProcessor(dbClient), tcp_stmt(nullptr), udp_stmt(nullptr), icmp_stmt(nullptr), arp_stmt(nullptr)
 {
     //
 }
@@ -50,7 +52,8 @@ void PacketLogger::createTable()
                             src_ip    TEXT, \
                             dst_ip    TEXT, \
                             src_port  INTEGER, \
-                            dst_port  INTEGER);";
+                            dst_port  INTEGER, \
+                            record    TEXT DEFAULT (datetime('now')) );";
 
     _db->executeQuery(tcpquery);
     
@@ -64,9 +67,25 @@ void PacketLogger::createTable()
                             dst_ip      TEXT, \
                             src_port    INTEGER, \
                             dst_port    INTEGER, \
-                            length      INTEGER );";
+                            length      INTEGER,  \
+                            record      TEXT DEFAULT (datetime('now')) );";
 
     _db->executeQuery(udpquery);
+
+    std::string icmpquery = "CREATE TABLE IF NOT EXISTS icmp_table ( \
+                            id          INTEGER PRIMARY KEY AUTOINCREMENT, \
+                            ts_sec      INTEGER, \
+                            ts_usec     INTEGER, \
+                            caplen      INTEGER, \
+                            pktlen      INTEGER, \
+                            src_ip      TEXT, \
+                            dst_ip      TEXT, \
+                            code        INTEGER, \
+                            type        INTEGER, \
+                            checksum    INTEGER, \
+                            record      TEXT DEFAULT (datetime('now')) );";
+
+    _db->executeQuery(icmpquery);
 
     std::string arpquery = "CREATE TABLE IF NOT EXISTS arp_table ( \
                             id        INTEGER PRIMARY KEY AUTOINCREMENT, \
@@ -78,7 +97,8 @@ void PacketLogger::createTable()
                             sender_mac TEXT, \
                             sender_ip  TEXT, \
                             target_mac  TEXT, \
-                            target_ip   TEXT);";
+                            target_ip   TEXT, \
+                            record      TEXT DEFAULT (datetime('now')) );";
 
     _db->executeQuery(arpquery);
 }
@@ -155,6 +175,36 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
                 _db->bindInt(udp_stmt, 9, length);
 
                 return _db->executeStatement(udp_stmt);
+            }
+            return false;
+        }
+        else if (iph->ip_p == IPPROTO_ICMP)
+        {
+            struct icmphdr *icmp_hdr = (struct icmphdr *)((u_char*)iph + iph->ip_hl * 4);
+
+            inet_ntop(AF_INET, &(iph->ip_src), src_buf, sizeof(src_buf));
+            inet_ntop(AF_INET, &(iph->ip_dst), dst_buf, sizeof(dst_buf));
+
+            std::string src_ip(src_buf);
+            std::string dst_ip(dst_buf);
+
+            uint8_t code = icmp_hdr->code;
+            uint8_t type = icmp_hdr->type;
+            uint16_t checksum = ntohs(icmp_hdr->checksum);
+
+            if (icmp_stmt) 
+            {
+                _db->bindInt(icmp_stmt, 1, header->ts.tv_sec);
+                _db->bindInt(icmp_stmt, 2, header->ts.tv_usec);
+                _db->bindInt(icmp_stmt, 3, header->caplen);
+                _db->bindInt(icmp_stmt, 4, header->len);
+                _db->bindText(icmp_stmt, 5, src_ip);
+                _db->bindText(icmp_stmt, 6, dst_ip);
+                _db->bindInt(icmp_stmt, 7, code);
+                _db->bindInt(icmp_stmt, 8, type);
+                _db->bindInt(icmp_stmt, 9, checksum);
+
+                return _db->executeStatement(icmp_stmt);
             }
             return false;
         }
@@ -235,6 +285,12 @@ void PacketLogger::prepareStatements()
         ELOG("Failed to prepare UDP statement.");
     }
 
+    std::string icmp_sql = "INSERT INTO icmp_table (ts_sec, ts_usec, caplen, pktlen, src_ip, dst_ip, code, type, checksum) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    if (!_db->prepareStatement(icmp_sql, &icmp_stmt))
+    {
+        ELOG("Failed to prepare ICMP statement.");
+    }
+
     std::string arp_sql = "INSERT INTO arp_table (ts_sec, ts_usec, caplen, pktlen, opcode, sender_mac, sender_ip, target_mac, target_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
     if (!_db->prepareStatement(arp_sql, &arp_stmt))
     {
@@ -246,9 +302,11 @@ void PacketLogger::finalizeStatements()
 {
     if (tcp_stmt) _db->finalizeStatement(tcp_stmt);
     if (udp_stmt) _db->finalizeStatement(udp_stmt);
+    if (icmp_stmt) _db->finalizeStatement(icmp_stmt);
     if (arp_stmt) _db->finalizeStatement(arp_stmt);
 
     tcp_stmt = nullptr;
     udp_stmt = nullptr;
+    icmp_stmt = nullptr;
     arp_stmt = nullptr;
 }

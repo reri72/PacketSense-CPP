@@ -15,6 +15,7 @@ class PacketLogger : public DbProcessor
     private:
         sqlite3_stmt* tcp_stmt;
         sqlite3_stmt* udp_stmt;
+        sqlite3_stmt* icmp_stmt;
         sqlite3_stmt* arp_stmt;
 
         int current_retry_count = 0;
