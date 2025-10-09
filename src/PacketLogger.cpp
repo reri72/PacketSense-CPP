@@ -103,7 +103,7 @@ void PacketLogger::createTable()
     _db->executeQuery(arpquery);
 }
 
-bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_char* packet) // 프로토콜 별로 std::string 반환하는 함수 만들면 괜찮겠다. 바인드 써서
+bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_char* packet)
 {
     const struct ethhdr *eth = (struct ethhdr *)packet;
     uint16_t eth_type = ntohs(eth->h_proto);

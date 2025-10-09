@@ -5,6 +5,7 @@
 #include "SqliteClient.h"
 #include "DbProcessor.h"
 
+// 옵저버
 class PacketLogger : public DbProcessor
 {
     public:

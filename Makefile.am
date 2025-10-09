@@ -4,6 +4,7 @@ bin_PROGRAMS = ps-cpp
 
 ps_cpp_SOURCES = \
     src/main.cpp \
+    src/PacketQueueManager.cpp \
     src/CapturePkt.cpp \
     src/DbProcessor..cpp \
     src/PacketBlocker.cpp \

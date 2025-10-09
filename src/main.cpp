@@ -6,6 +6,7 @@
 #include "CapturePkt.h"
 #include "PacketBlocker.h"
 #include "PacketLogger.h"
+#include "PacketQueueManager.h"
 
 class CaptureLoggerTest : public PacketListener
 {
@@ -49,20 +50,25 @@ int main(int argc, char **argv)
     ReadConf::getInstance().loadConfig(configFile);
     ReadConf::getInstance().printAllConfig();
 
-#if 0
     try
     {
+        const int num_workers = 2;
+        PacketQueueManager queueManager(num_workers);
+
         std::string targetDev = ReadConf::getInstance().getCaptureInterface();
         bool Promiscuous = ReadConf::getInstance().getPromiscuousMode();
         std::string filterRule = ReadConf::getInstance().getFilterExpres();
 
-        std::unique_ptr<CapturePkt> capturer = std::make_unique<CapturePkt>(targetDev, Promiscuous, filterRule);
+        std::unique_ptr<CapturePkt> capturer = 
+            std::make_unique<CapturePkt>(targetDev, Promiscuous, filterRule, &queueManager);
 
         ILOG("Starting packet capture on device: {}", targetDev);
         
+        // 콘솔 출력을 위한 클래스
         CaptureLoggerTest logger;
-        capturer->addObserver(&logger);
+        queueManager.addObserver(&logger);
 
+        // SQLite 데이터베이스 관련
         SqliteClient db("ps-cpp.db");
         if (!db.connect())
         {
@@ -70,22 +76,25 @@ int main(int argc, char **argv)
             return -1;
         }
 
+        // 패킷 차단을 위한 클래스
         PacketBlocker blocker(&db);
         if (!blocker.initialize())
         {
             ELOG("PacketBlocker initialization failed");
             return -1;
         }
-        capturer->addObserver(&blocker);
+        queueManager.addObserver(&blocker);
 
+        // 캡처한 패킷의 정보를 처리하는 클래스
         PacketLogger packetlogger(&db);
         if (!packetlogger.initialize())
         {
             ELOG("PacketLogger initialization failed");
             return -1;
         }
-        capturer->addObserver(&packetlogger);
+        queueManager.addObserver(&packetlogger);
 
+        queueManager.startWorkers();
         capturer->startCapture();
 
         int o = 0;
@@ -96,13 +105,13 @@ int main(int argc, char **argv)
         }
 
         capturer->stopCapture();
+        queueManager.stopWorkers();
     }
     catch (const std::exception& ex)
     {
         ELOG("Exception: {}", ex.what());
         return 1;
     }
-#endif
 
     return 0;
 }

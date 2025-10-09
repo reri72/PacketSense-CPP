@@ -6,23 +6,10 @@
 #include <mutex>
 #include <string>
 #include <algorithm>
-#include "PacketListener.h"
+#include "PacketQueueManager.h"
 
-// 알림 주체 클래스
-class PacketNotifier
-{
-    private:
-        std::vector<PacketListener*> observers;
-        std::mutex mtx;
-
-    public:
-        void addObserver(PacketListener* observer);
-        void removeObserver(PacketListener* observer);
-        void notify(const struct pcap_pkthdr* header, const u_char* packet);
-};
-
-// 콘크리트 클래스
-class CapturePkt : public PacketNotifier
+// 생산자 클래스
+class CapturePkt
 {
     private:
         pcap_t* handle;
@@ -33,6 +20,8 @@ class CapturePkt : public PacketNotifier
 
         std::thread captureThread_;
 
+        PacketQueueManager *queueManager = nullptr;
+
         static void packetHandler(u_char* userData,
                                 const struct pcap_pkthdr* header,
                                 const u_char* packet);
@@ -40,7 +29,10 @@ class CapturePkt : public PacketNotifier
                                 const u_char* packet);
 
     public:
-        CapturePkt(const std::string& device, bool Promiscuous, const std::string& filter_rule = "");
+        CapturePkt(const std::string& device,
+                    bool Promiscuous,
+                    const std::string& filter_rule,
+                    PacketQueueManager *queueManager);
         ~CapturePkt();
 
         void startCapture();

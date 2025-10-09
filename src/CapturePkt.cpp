@@ -5,41 +5,13 @@
 #include "CapturePkt.h"
 #include "LogManager.h"
 
-void PacketNotifier::addObserver(PacketListener* observer)
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    observers.push_back(observer);
-}
-
-void PacketNotifier::removeObserver(PacketListener* observer)
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    observers.erase(
-        remove(observers.begin(), observers.end(), observer),
-        observers.end()
-    );
-}
-
-void PacketNotifier::notify(const struct pcap_pkthdr* header, const u_char* packet)
-{
-    std::lock_guard<std::mutex> lock(mtx);
-    for (PacketListener* obs : observers)
-    {
-        try
-        {
-            obs->onPacket(header, packet);
-        }
-        catch (const std::exception& e)
-        {
-            ELOG("PacketListener error: {}", e.what());
-        }
-    }
-}
-
-CapturePkt::CapturePkt(const std::string& device, bool Promiscuous, const std::string& filter_rule)
+CapturePkt::CapturePkt(const std::string& device,
+                        bool Promiscuous,
+                        const std::string& filter_rule,
+                        PacketQueueManager *queueManager) : queueManager(queueManager)
 {
     char errbuf[PCAP_ERRBUF_SIZE] = {0,};
-
+    
     handle = pcap_open_live(device.c_str(), BUFSIZ, Promiscuous, 1000, errbuf);
     if (!handle)
     {
@@ -152,5 +124,8 @@ void CapturePkt::handlePacket(const struct pcap_pkthdr* header, const u_char* pa
 
     DLOG("hex: {}", oss.str());
 
-    notify(header, packet);
+    if (queueManager)
+    {
+        queueManager->enqueue(header, packet);
+    }
 }
