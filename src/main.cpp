@@ -2,6 +2,7 @@
 #include <csignal>
 #include <atomic>
 #include <unistd.h>
+#include <sys/types.h>
 
 #include "LogManager.h"
 #include "ReadConf.h"
@@ -31,9 +32,14 @@ void sig_handle(int signum)
 
 int main(int argc, char **argv)
 {
+    if (geteuid() != 0)
+    {
+        std::cout << "root privileges are required" << std::endl;
+        exit(0);
+    }
+
     int opt;
     std::string configFile;
-
     while ((opt = getopt(argc, argv, "c:")) != -1)
     {
         switch (opt)
