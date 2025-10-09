@@ -1,4 +1,6 @@
 #include <iostream>
+#include <csignal>
+#include <atomic>
 #include <unistd.h>
 
 #include "LogManager.h"
@@ -8,6 +10,8 @@
 #include "PacketLogger.h"
 #include "PacketQueueManager.h"
 
+std::atomic<bool> running(true);
+
 class CaptureLoggerTest : public PacketListener
 {
     public:
@@ -16,6 +20,14 @@ class CaptureLoggerTest : public PacketListener
             std::cout << "Captured packet of length: " << header->len << " bytes" << std::endl;
         }
 };
+
+void sig_handle(int signum)
+{
+    running = false;
+
+    std::cout << signum << " received.." <<std::endl;
+    ILOG("signal {} received..", signum);
+}
 
 int main(int argc, char **argv)
 {
@@ -37,6 +49,18 @@ int main(int argc, char **argv)
             } return 1;
         }
     }
+
+    struct sigaction sa = {0,};
+
+    sa.sa_handler = sig_handle;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
+    sigaction(SIGHUP, &sa, nullptr);
+    sigaction(SIGABRT, &sa, nullptr);
+    sigaction(SIGPIPE, &sa, nullptr);
 
     ILOG("Hello ps-cpp!");
 
@@ -97,11 +121,9 @@ int main(int argc, char **argv)
         queueManager.startWorkers();
         capturer->startCapture();
 
-        int o = 0;
-        while (o < 10)
+        while (running)
         {
             sleep(1);
-            o++;
         }
 
         capturer->stopCapture();
