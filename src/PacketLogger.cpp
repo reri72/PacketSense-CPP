@@ -106,7 +106,13 @@ void PacketLogger::createTable()
 bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_char* packet)
 {
     const struct ethhdr *eth = (struct ethhdr *)packet;
-    uint16_t eth_type = ntohs(eth->h_proto);
+    uint16_t eth_type;
+
+    // 최소 길이 체크
+    if (header->caplen < 14)
+        return;
+
+    eth_type = ntohs(eth->h_proto);
 
     const struct ip *iph = nullptr;
     if (eth_type == 0x0800 || eth_type == 0x8100)
