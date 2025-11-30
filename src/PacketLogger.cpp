@@ -7,8 +7,9 @@
 #include <netinet/udp.h>
 #include <net/if_arp.h>
 #include <arpa/inet.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
 #include <netinet/ip_icmp.h>
-
 #include <sstream>
 
 PacketLogger::PacketLogger(SqliteClient* dbClient)
@@ -110,7 +111,7 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
 
     // 최소 길이 체크
     if (header->caplen < 14)
-        return;
+        return true;
 
     eth_type = ntohs(eth->h_proto);
 
@@ -167,6 +168,28 @@ bool PacketLogger::insertPacketData(const struct pcap_pkthdr* header, const u_ch
             uint16_t src_port = ntohs(uhdr->source);
             uint16_t dst_port = ntohs(uhdr->dest);
             uint16_t length = ntohs(uhdr->len);
+
+            // dns 헤더는 대부분 12 bytes
+            if (src_port == 53 || dst_port == 53)
+            {
+                uint16_t dnslen = length - sizeof(struct udphdr);
+                if (dnslen > sizeof(HEADER))
+                {
+                    HEADER *dnshdr = (HEADER *)((u_char*)uhdr + sizeof(struct udphdr));
+                    DLOG("dns transaction id : {}", ntohs(dnshdr->id));
+
+                    DLOG("flags - qr : {}", (unsigned int)dnshdr->qr); // 0이면 쿼리, 1이면 응답
+                    DLOG("flags - opcode : {}", (unsigned int)dnshdr->opcode); // 메세지 목적 (0은 표준)
+                    DLOG("flags - tc : {}", (unsigned int)dnshdr->tc); // 0이면 메세지가 안잘렸다는 의미
+                    DLOG("flags - rd : {}", (unsigned int)dnshdr->rd); // 1이면 재귀적 쿼리 요청
+                    DLOG("flags - ad : {}", (unsigned int)dnshdr->qr); // 0이면 수용 불가
+
+                    DLOG("questions : {}", ntohs(dnshdr->qdcount)); // 질의 섹션에 포함된 항목 수
+                    DLOG("answers : {}", ntohs(dnshdr->ancount)); // 응답 섹션에 포함된 리소스 레코드 수
+                    DLOG("authority : {}", ntohs(dnshdr->nscount)); // 권한 섹션에 포함된 리소스 레코드 수
+                    DLOG("additional : {}", ntohs(dnshdr->arcount)); // 추가 섹션에 포함된 리소스 레코드 수
+                }
+            }
             
             if (udp_stmt) 
             {
